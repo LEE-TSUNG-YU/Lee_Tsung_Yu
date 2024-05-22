@@ -1,0 +1,55 @@
+---
+title: "2024 Statistical Consulting - Final Report"
+date: today
+author: Group 2
+format:
+ pdf:
+    include-in-header:
+      - text: |
+         \usepackage{setspace,relsize}
+mainfont: "Microsoft JhengHei UI"
+toc: true
+---
+
+\newpage
+
+# Introduction
+
+The laptop dataset is from Kaggle
+(https://www.kaggle.com/datasets/siddiquifaiznaeem/laptop-sales-price-prediction-dataset-2024).
+
+```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(Hmisc, quietly = T)
+library(tinytex, quietly = T)
+```
+
+```{r}
+rawdata <- read.csv(
+  "C:/github_LTY/Lee_Tsung_Yu/Statistical Consulting/Final Report/data/laptop.csv")
+rawdata <- rawdata[, -c(1, 2)]
+```
+
+```{r}
+#| output: asis
+latex(describe(rawdata), file = "", caption.placement = "top")
+```
+
+\newpage
+## Missing data
+
+Next, we explore the missingness of raw data.
+```{r}
+library(DataExplorer, quietly = T)
+plot_missing(rawdata, missing_only = T)
+```
+# Machine Learning
+## Linear regression
+
+\newpage
+## Neural Network
+```{r}
+library(mlbench)
+library(reshape2)
+```
+
