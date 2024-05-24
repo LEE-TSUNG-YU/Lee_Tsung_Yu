@@ -1,20 +1,21 @@
+
 # Example 4.1.3
-Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/Categorical data analysis/dataset/Crabs.dat", header = T)
+Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs.dat", header = T)
 plot(jitter(y, 0.08) ~ width, data = Crabs)
 library(gam)
-gam.fit <-gam(y ~ s(width), family=binomial, data=Crabs)#s =smooth funct.
+gam.fit <-gam(y ~ s(width), family=binomial, data=Crabs)#s =smooth function.
 # plots generalized additive model smoothing fit
 curve(predict(gam.fit, data.frame(width=x), type="resp"), add=TRUE)
 fit <-glm(y ~width, family=binomial, data=Crabs) #link=logit is default
-# logistic regression fit isadded to the plot
+# logistic regression fit is added to the plot
 curve(predict(fit, data.frame(width=x), type="resp"), add=TRUE)
 summary(fit)
-predict(fit, data.frame(width = 21.0), type="response") # estimated probability of satellite atwidth =21.0
+predict(fit, data.frame(width = 21.0), type="response") # estimated probability of satellite at width =21.0
 
-predict(fit, data.frame(width = mean(Crabs$width)), type="response") # estimated probability of satellite atmean width
+predict(fit, data.frame(width = mean(Crabs$width)), type="response") # estimated probability of satellite at mean width
 
 # Chapter 4.2.1
-Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/Categorical data analysis/dataset/Crabs.dat", header = T)
+Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs.dat", header = T)
 fit <- glm(y ~ width, family=binomial, data=Crabs)
 summary(fit)
 confint(fit) # profile likelihood confidence interval
@@ -22,7 +23,7 @@ library(car)
 Anova(fit) # likelihood-ratio test of width effect
 
 # Chapter 4.2.3
-Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/Categorical data analysis/dataset/Crabs.dat.dat", header = T)
+Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs.dat", header = T)
 fit <- glm(y ~ width, family=binomial, data=Crabs)
 pred.prob <- fitted(fit) # ML fitted value estimate of P(Y=1)
 lp <- predict(fit, se.fit=TRUE) # linear predictor
@@ -108,7 +109,7 @@ predict(fit, data.frame(LI = quantile(LI, probs = c(0.25, 0.75))), type = "respo
 # 4.3
 
 # 4.5
-Shuttle <- read.table("C:/github_LTY/Lee_Tsung_Yu/Categorical data analysis/dataset/Shuttle.dat", header = T)
+Shuttle <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Shuttle.dat", header = T)
 # (a)
 fit <- glm(TD~Temp, family = "binomial", data = Shuttle)
 # (b)
@@ -117,17 +118,30 @@ predict(fit, data.frame(Temp = c(31)), type = "response")
 Anova(fit)
 
 # 4.7
-Kyphosis <- read.table("C:/github_LTY/Lee_Tsung_Yu/Categorical data analysis/dataset/Kyphosis.dat", header = T)
+Kyphosis <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Kyphosis.dat", header = T)
 # (a)
 fit <- glm(y ~ x, family = "binomial", data = Kyphosis)
+summary(fit)
 # (b)
-
+plot(jitter(y, 0.08) ~ x, data = Kyphosis, xlab = "Age", ylab = "Y")
 # (c)
-Kyphosis$x2 <- (Kyphosis$x)^2
 fit2 <- glm(y ~ x + I(x^2), family = "binomial", data = Kyphosis)
 summary(fit2)
-fit3 <- glm(y ~ x + x2, family = "binomial", data = Kyphosis)
-summary(fit3)
-
-plot(y ~ x, data = Kyphosis)
 curve(predict(fit2, data.frame(x=x), type="resp"), add=TRUE)
+
+# 4.9
+# (a)
+Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs.dat", header = T)
+fit <- glm(y ~ factor(color), family = binomial, data = Crabs)
+summary(fit)
+# (b)
+library(car)
+Anova(fit)
+# (c)
+fit <- glm(y ~ color, family = binomial, data = Crabs)
+summary(fit)
+# (d)
+
+# (e)
+fit <- glm(y ~ weight + color, family = binomial, data = Crabs)
+summary(fit)

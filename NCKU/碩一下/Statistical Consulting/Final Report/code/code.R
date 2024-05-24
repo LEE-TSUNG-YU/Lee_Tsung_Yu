@@ -1,4 +1,4 @@
-rawdata <- read.csv("C:/github_LTY/Lee_Tsung_Yu/碩一下/Statistical Consulting/Final Report/data/laptop.csv")
+rawdata <- read.csv("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Statistical Consulting/Final Report/data/laptop.csv")
 rawdata[rawdata == ""] <- NA
 
 # drop columns
