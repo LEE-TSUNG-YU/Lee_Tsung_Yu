@@ -98,20 +98,30 @@ auc(rocplot) # auc = area under ROC curve = concordance index
 # 4.1
 LI <-c(8,8,10,10,12,12,12,14,14,14,16,16,16,18,20,20,20,22,22,24,26,28,32,34,38,38,38)
 y <- c(0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1,0,0,1,1,0,1,1,1,0)
-fit <- glm(y ~LI, family=binomial)
+data <- data.frame(LI = LI, y = y)
+fit <- glm(y ~ LI, family = binomial, data = data)
 summary(fit)
+# a.
 predict(fit, data.frame(LI = c(26)), type = "response")
+# c.
+predict(fit, data.frame(LI = c(12,26)), type = "response")
+predict(fit, data.frame(LI = c(8,38)), type = "response")
+# d.
 predict(fit, data.frame(LI = c(8)), type = "response")
-confint(glm(y ~LI, family=binomial))
-quantile(LI, probs = c(0.25, 0.75))
-predict(fit, data.frame(LI = quantile(LI, probs = c(0.25, 0.75))), type = "response")
+# e.
+library(mfx)
+logitmfx(fit, atmean = F, data = data)
 
 # 4.3
+remission <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Remission.dat", header = T)
+fit2 <- glm(remissions/cases ~ LI,family = "binomial",weights = cases, data = remission)
+summary(fit2)
 
 # 4.5
 Shuttle <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Shuttle.dat", header = T)
 # (a)
 fit <- glm(TD~Temp, family = "binomial", data = Shuttle)
+summary(fit)
 # (b)
 predict(fit, data.frame(Temp = c(31)), type = "response")
 # (c)
@@ -125,23 +135,43 @@ summary(fit)
 # (b)
 plot(jitter(y, 0.08) ~ x, data = Kyphosis, xlab = "Age", ylab = "Y")
 # (c)
-fit2 <- glm(y ~ x + I(x^2), family = "binomial", data = Kyphosis)
+Kyphosis$x2 <- (Kyphosis$x)^2
+fit2 <- glm(y ~ x + x2, family = "binomial", data = Kyphosis)
 summary(fit2)
-curve(predict(fit2, data.frame(x=x), type="resp"), add=TRUE)
-
+prd <- predict(fit, data.frame(x = Kyphosis$x), type="resp")
+lines(sort(Kyphosis$x), prd[order(Kyphosis$x)], col='blue', type='l', lwd = 2) 
+prd2 <- predict(fit2, data.frame(x = Kyphosis$x, x2 = Kyphosis$x2), type="resp")
+lines(sort(Kyphosis$x), prd2[order(Kyphosis$x)], col='red', type='l', lwd = 2) 
+legend("topright", legend=c("x", "x + x^2"),
+       col=c("blue", "red"),lty = c(1,1), cex=0.6)
 # 4.9
 # (a)
 Crabs <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs.dat", header = T)
-fit <- glm(y ~ factor(color), family = binomial, data = Crabs)
-summary(fit)
+fit1 <- glm(y ~ factor(color), family = binomial, data = Crabs)
+summary(fit1)
+fit2 <- glm(y ~ relevel(factor(color), ref = "4"), family = binomial, data = Crabs)
+summary(fit2)
 # (b)
 library(car)
-Anova(fit)
+Anova(fit2)
 # (c)
 fit <- glm(y ~ color, family = binomial, data = Crabs)
 summary(fit)
-# (d)
-
 # (e)
 fit <- glm(y ~ weight + color, family = binomial, data = Crabs)
 summary(fit)
+
+# 4.19
+fit1 <- glm(y ~ width + factor(color), family = binomial, data = Crabs)
+summary(fit1)
+fit2 <- glm(y ~ width*factor(color), family = binomial, data = Crabs)
+summary(fit2)
+anova(fit1, fit2, test="LRT")
+plot(jitter(y, 0.08) ~ width, data = Crabs)
+for(i in c(1,2,3,4)){
+  data <- Crabs[Crabs$color == i, c(5,6)]
+  prd <- predict(fit2, data, type = "response")
+  lines(sort(data$width), prd[order(data$width)], col = i, type = "l", lwd = 2)
+}
+legend("bottomright", legend=c("color = 1", "color = 2", "color = 3", "color = 4"),
+       col=c(1,2,3,4),lty = c(1,1,1,1), cex=0.6, lwd = c(2,2,2,2))
