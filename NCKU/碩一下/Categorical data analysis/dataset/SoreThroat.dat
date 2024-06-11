@@ -1,8 +1,3 @@
-Data on D = duration of surgery (minutes), T = type of device (0 =
-laryngeal mask airway, 1 = tracheal tube), and y = sore throat on
-waking (1=yes, 0=no), for exercise at end of Chapter 5, taken from
-article by D. Collett in Wiley's Encyclopedia of Biostatistics.
-
 D  T  Y  
 45 0 0 
 15 0 0 
