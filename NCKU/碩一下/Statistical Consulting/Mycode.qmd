@@ -1,0 +1,150 @@
+---
+title: "Group 6 - Final Report"
+date: today
+author: Tsung-Yu LEE
+format:
+ pdf:
+    include-in-header:
+      - text: |
+         \usepackage{setspace,relsize}
+mainfont: "Times New Roman"
+toc: true
+---
+
+\newpage
+
+To start the code, the following packages should be installed.
+
+```{r setup, include = TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(Hmisc, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(table1, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(readr, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(mice, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(dplyr, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(tidyselect, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(DataExplorer, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(ggplot2, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(reshape2, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+library(VIM, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+```
+
+# Introduction
+
+## Data Source
+
+The laptop dataset is from Kaggle [Laptop Sales Price Prediction](https://www.kaggle.com/datasets/siddiquifaiznaeem/laptop-sales-price-prediction-dataset-2024).
+
+```{r}
+laptop <- read.csv("C:/github_LTY/homework/Final Report/data/laptop.csv",
+                   na.strings = c("","NA"))
+```
+
+## Summary Statistics
+
+```{r}
+#| output: asis
+latex(describe(laptop), file = "", caption.placement = "top")
+```
+
+## Missing Values
+
+```{r, fig.width=11}
+plot_missing(laptop, missing_only = TRUE)
+```
+***Good***:
+
+
+-   "Graphics_integrated", "Graphics_brand", "Graphics_name" have **2(0.2%)** missing values.
+
+
+-   "Core_per_processor" has **12(1.18%)** missing values.
+
+
+-   "RAM_type" has **22(2.16%)** missing values.
+
+
+-   "Processor_variant" has **24(2.35%)** missing values. 
+
+
+-   "Threads" has **48(4.71%)** missing values.
+
+
+***OK***:
+
+
+-   "Processor_gen" has **129(12.65%)** missing values.
+
+
+-   "Execution_units" and "Total_processor" have **447(43.82%)** missing values.
+
+
+***Bad***:
+
+
+-   "Graphics_GB" has **652(63.92%)** missing values
+
+## Data Visualization
+```{r}
+laptop[laptop$Brand == "Asus", "Brand"] = "ASUS"
+sort(table(laptop$Brand))
+```
+
+```{r}
+
+```
+
+
+# Data Analysis
+
+## Feature Engineering
+```{r}
+data <- laptop
+```
+
+## Split training and testing dataset
+```{r}
+set.seed(2024)
+# smp.size = floor(0.8*nrow(data))
+# train.index = sample(seq_len(nrow(data)), smp.size)
+# train = data[train.index, ] # 80%
+# test = data[-train.index, ] # 20%
+```
+
+## Model Fitting
+
+### Linear Regression
+
+### SVM Regressor
+```{r}
+library(e1071, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+# model <- svm(y ~ x , data)
+# svr.pred = predict(model, data)
+# mean(abs(data$y - svr.pred))
+```
+
+### Random Forest Regressor
+```{r}
+library(randomForest, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+```
+
+### XGBoost
+
+The parameters of XGBoost are listed below: ```max.depth```, ```eta```, ```nthread```, ```nrounds```, ```objective```: "binary:logistic", ```verbose```: Valid values are 0 (silent), 1 (warning), 2 (info), 3 (debug).
+```{r}
+library(xgboost, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+# xgb <- xgboost(data = train, max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = "reg:absoluteerror", verbose = 0)
+```
+
+### LightGBM
+```{r}
+library(lightgbm, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+# lgbm <- lightgbm()
+```
+
+### Catboost
+```{r}
+library(catboost, warn.conflicts = FALSE, verbose = FALSE, quietly = TRUE)
+```
+
+# Final Results

@@ -17,6 +17,7 @@ stepAIC(fit)
 Crabs2 <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/Crabs2.dat", header = T)
 Crabs2$Year <- Crabs2$Year - 1993
 fit <- glm(y ~ ., family = binomial, data = Crabs2)
+summary(fit)
 stepAIC(fit)
 
 # 5.7
