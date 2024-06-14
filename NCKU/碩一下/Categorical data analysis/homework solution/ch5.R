@@ -21,6 +21,12 @@ summary(fit)
 stepAIC(fit)
 
 # 5.7
+AIDS <- read.table("C:/github_LTY/Lee_Tsung_Yu/NCKU/碩一下/Categorical data analysis/dataset/AIDS.dat", header = T)
+fit <- glm(yes/(yes+no) ~ azt+ race, weights=yes+no, family=binomial, 
+           data=AIDS)
+summary(fit)
+1-pchisq(fit$deviance, fit$df.residual)
+# since the p-value is 0.2395 > 0.05, the model fits adequately.
 
 # 5.9
 
