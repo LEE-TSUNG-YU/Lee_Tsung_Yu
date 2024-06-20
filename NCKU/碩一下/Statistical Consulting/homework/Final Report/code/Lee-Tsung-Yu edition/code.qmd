@@ -1,0 +1,535 @@
+---
+title: "Laptop Price Prediction"
+date: today
+author: Tsung-Yu Lee
+format:
+ pdf:
+    include-in-header:
+      - text: |
+         \usepackage{setspace,relsize}
+mainfont: "Times New Roman"
+toc: true
+editor_options: 
+  chunk_output_type: console
+geometry:
+  - top=10mm
+  - right=10mm
+  - left=10mm
+  - bottom=10mm
+---
+
+\newpage
+
+# Introduction
+
+## Data Source
+
+The laptop dataset is from Kaggle [Laptop Sales Price Prediction](https://www.kaggle.com/datasets/siddiquifaiznaeem/laptop-sales-price-prediction-dataset-2024).
+
+```{r Read data, message=FALSE, warning=FALSE}
+setwd("C:/github_LTY/homework/Final Report") # Set working directory.
+laptop <- read.csv("data/laptop.csv", na.strings = c("","NA"))
+```
+
+Because "X" and "Name" are useless, so we delete these columns in advance.
+
+```{r Delete X and Name}
+laptop <- subset(x = laptop, select = -c(X, Name))
+```
+
+## Summary Statistics
+
+```{r Summary Statistics, message=FALSE, warning=FALSE}
+#| output: asis
+library(Hmisc) # summary statistics
+latex(describe(laptop), file = "", caption.placement = "top")
+```
+
+## Missing Values Proportion
+
+```{r}
+Summary.Table <- function(data){
+  output <- data.frame(feature = names(data),
+                       type = sapply(data, class),
+            unique_value = sapply(data, function(x){if(!is.numeric(x)){length(unique(x))}
+            else{"---"}}),
+            num_missing = sapply(data, function(x){sum(is.na(x))}),
+                       missing_rate = sapply(data, function(x) round(mean(is.na(x))*100, 2)))
+  colnames(output) <- (c("feature", "type", "# of unique value",
+                   "# of missing value", "missing rate(%)"))
+  rownames(output) <- NULL
+  return(output)
+}
+```
+
+```{r Missing Values Proportion, message=FALSE, warning=FALSE}
+library(DataExplorer)
+library(gt)
+Summary.Table(laptop) %>% gt()
+```
+
+## Missing Pattern
+
+Next, we want to realize the missing pattern of laptop data.
+
+```{r Define md.pattern function, message=FALSE, warning=FALSE}
+# Customize md.pattern function originally in mice package.
+library(mice)
+md.pattern.mine <- function(x, plot = TRUE, rotate.names = FALSE, cex = 2.0){
+  R <- is.na(x)
+  # Calculate number of missing values in each variable.
+  nmis <- colSums(R) 
+  # create a matrix, and column is ordered by nmis.
+  R <- matrix(R[, order(nmis)], dim(x))
+  # Transform rows to strings consisting of 0(non-missing) and 1(missing).
+  pat <- apply(R, 1, function(x) paste(as.numeric(x), collapse = ""))
+  # Sort rows by their missing patterns.
+  sortR <- matrix(R[order(pat), ], dim(x))
+  # Keep non-duplicated rows.
+  mpat <- sortR[!duplicated(sortR), ]
+  # obtain number of each missing pattern at LHS.
+  rownames(mpat) <- table(pat)
+  # abs(mpat - 1) obtain entries of matrix, (0, 1) means (missing, non-missing)
+  # rowSums(mpat) obtain number of missing values in each row at RHS.
+  r <- cbind(abs(mpat - 1), rowSums(mpat))
+  # obtain number of missing values in each column at bottom center.
+  # sum(nmis) sums values at bottom center.
+  r <- rbind(r, c(nmis[order(nmis)], sum(nmis)))
+  if (plot){
+    op <- par(mar = rep(0, 4))
+    on.exit(par(op))
+    plot.new()
+    if (is.null(dim(R))){
+      R <- t(as.matrix(R))
+    }
+    R <- r[1:nrow(r) - 1, 1:ncol(r) - 1]
+    if(rotate.names){
+      adj <- c(0, 0.5)
+      srt <- 90
+      length_of_longest_colname <- max(nchar(colnames(r)))/2.6
+      plot.window(xlim = c(-1, ncol(R) + 1),
+                ylim = c(-1, nrow(R) +
+                        length_of_longest_colname), asp = 1)
+    }
+    else{
+      adj <- c(0.5, 0)
+      srt <- 0
+      plot.window(xlim = c(-1, ncol(R) + 1), 
+                  ylim = c(-1, nrow(R) + 1), asp = 1)
+    }
+    M <- cbind(c(row(R)), c(col(R))) - 1
+    shade <- ifelse(R[nrow(R):1, ], mdc(1), mdc(2))
+    rect(M[, 2], M[, 1], M[, 2] + 1, M[, 1] + 1, col = shade)
+    for(i in 1:ncol(R)){
+      # Show colnames at the top center.
+      text(i - 0.5, nrow(R) + 0.3, colnames(r)[i], adj = adj, 
+          srt = srt, cex = cex)
+      # Show number of missing values for each variable at the bottom center.
+      text(i - 0.5, -0.8, nmis[order(nmis)][i], cex = cex, srt = srt)
+    }
+    for(i in 1:nrow(R)){
+      # Show number of missing values for each subjects at the RHS.
+      text(ncol(R) + 0.3, i - 0.5, r[(nrow(r) - 1):1, ncol(r)][i], 
+          adj = 0, cex = cex)
+      # Show number of subjects for each kind of missing pattern at the LHS.
+      text(-0.3, i - 0.5, rownames(r)[(nrow(r) - 1):1][i], adj = 1, cex = cex)
+    }
+    # show total number of missing entries.
+    # text(ncol(R) + 1.3, -0.6, r[nrow(r), ncol(r)], cex = cex) 
+    # return(r)
+  }
+  else {
+    return(r)
+  }
+}
+```
+
+```{r, fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+library(dplyr)
+mis_col <- colnames(laptop)[profile_missing(laptop)$num_missing > 0]
+laptop[,mis_col] %>%
+  md.pattern.mine(rotate.names = T, cex = 1.0)
+```
+
+From the missing pattern plot, we can observe that  
+1. The missing values of "Total_processor" and "Execution_units" occur with each other.  
+
+# Exploratory Data Analysis (EDA)
+
+## Numerical Columns
+
+First, we look at numerical variables.
+```{r}
+numerical_columns <- laptop %>%
+  select(where(is.numeric)) %>%
+  colnames()
+numerical_columns
+```
+
+Next, we look at the outcome variable ```Price```. Because the price in this data is INR (Indian Rupees), so we multiply 0.39, the exchange rate of TWD to INR.
+
+```{r}
+laptop$Price <- laptop$Price * 0.39
+```
+
+Because the original price is extremely skewed to the right, we take log() to make it more symmetric. Below are histograms of Price and log(Price). 
+```{r, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(gridExtra)
+plot1 <- laptop %>%
+  ggplot(aes(x = Price))+
+  geom_histogram(binwidth = 10000, fill="lightblue",alpha=0.9)+
+  ggtitle("Histogram of Price")
+
+plot2 <- laptop %>%
+  ggplot(aes(x = log(Price)))+
+  geom_histogram(binwidth = 0.1, fill="lightblue",alpha=0.9)+
+  ggtitle("Histogram of log(Price)")
+
+grid.arrange(grobs = list(plot1, plot2), ncol = 2, nrow = 1)
+```
+
+Next, we look at the correlation between all numerical features.
+```{r, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+library(reshape2)
+library(tidyverse)
+# Compute the correlation matrix using pairwise deletion.
+cor_matrix <- round(cor(laptop[,numerical_columns], use = "pairwise.complete.obs"), 3)
+
+# Melt the correlation matrix for ggplot2
+melted_cor_matrix <- melt(cor_matrix)
+
+# Plotting with ggplot2
+ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "black", linewidth = 0.5) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name="Correlation") +
+  geom_text(aes(label = value), color = "black", size = 6) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) +
+  labs(title = "Correlation between numerical columns", x = "", y = "")
+```
+
+From the correlation heatmap, we can discover that  
+1. ```"ppi"```, ```"Vertical_pixel"``` and ```"Horizontal_pixel"``` are highly correlated. We will keep ```"ppi"```, and delete ```"Vertical_pixel"``` and ```"Horizontal_pixel"```.  
+2. ```"Energy_Efficient_Units"``` and ```"Low_Power_Cores"``` are perfectly correlated ($\rho=1$).  
+We will keep ```"Energy_Efficient_Units"``` and delete ```"Low_Power_Cores"```. 
+3. ```Rating``` has low correlation with ```Price```, so we will also delete it.
+
+
+Also, we think that ```Processor_gen``` has wrong information about its meaning, we will also delete it.
+
+```{r}
+laptop <- subset(laptop, select = -c(Rating, Processor_gen, Low_Power_Cores,
+                                     Energy_Efficient_Units, Vertical_pixel,
+                                     Horizontal_pixel))
+```
+
+## Categorical Columns
+
+We look at each categorical variables.  
+
+```{r Categorical colomns}
+# Obtain column names of categorical variables. 
+cat_cols <- laptop %>%
+  select(where(is.character)) %>%
+  colnames()
+cat_cols
+```
+
+1. Brand  
+```{r Brand}
+sort(table(laptop$Brand))
+```
+
+Because there is typing error about "ASUS" and "Asus", we unify them to "ASUS".  
+
+```{r}
+laptop[laptop == "Asus"] <- "ASUS"
+```
+
+2. Processor_brand  
+```{r}
+sort(table(laptop$Processor_brand))
+```
+3. Processor_name  
+```{r}
+sort(table(laptop$Processor_name))
+```
+Because there are so many names that have only 1 subject, we have to modify ```Processor_name``` by hand.  
+```{r}
+laptop[laptop == "AMD Athlon Pro"] <- "AMD Athlon"
+laptop[laptop == "AMD Athlon Silver"] <- "AMD Athlon"
+laptop[laptop == "eration Intel Core"] <- "Intel Core i5"
+laptop[laptop == "Intel Celeron Dual"] <- "Intel Celeron"
+laptop[laptop == "Intel Core 3"] <- "Intel Core i3"
+laptop[laptop == "Intel Core I3-1115G4"] <- "Intel Core i3"  
+laptop[laptop == "Intel Pentium "] <- "Intel Pentium"
+laptop[laptop == "Intel Pentium Gold"] <- "Intel Pentium"
+laptop[laptop == "Mediatek"] <- "MediaTek"
+laptop[laptop == "Apple M2 Apple M2 Chip"] <- "Apple M2"
+laptop[laptop == "Apple M3 Max"] <- "Apple M3"
+laptop[laptop == "Intel  "] <- "Intel Celeron"
+laptop[laptop == "Intel Pentium Silver"] <- "Intel Pentium" 
+laptop[laptop == "Apple M3 Pro"] <- "Apple M3"
+laptop[laptop == "Intel Core 7"] <- "Intel Core i7"
+laptop[laptop == "MediaTek Kompanio"] <- "MediaTek"
+laptop[laptop == "Intel Core 5"] <- "Intel Core i5"
+laptop[laptop == "Intel Celeron "] <- "Intel Celeron"
+```
+4. Processor_variant  
+```{r}
+length(unique(laptop$Processor_variant))
+```
+Since ```Processor_variant``` has 126 categories, we don't need to explore this feature. We will delete this column in the data preprocessing stage.
+
+5. RAM_type
+```{r}
+sort(table(laptop$RAM_type))
+```
+Because there are some typing errors, we modify them by hand.  
+```{r}
+laptop[laptop == "LPDDRX4"] <- "LPDDR4X"
+laptop[laptop == "PDDR5X"] <- "LPDDR5X"
+```
+Also, there are 22 missing values in RAM_type, we surfed the internet, find the true RAM_type, and modified them by hand.  
+```{r}
+which(is.na(laptop$RAM_type))
+laptop[c(18,84,117,164,203,204,295,348,349,350,351) , "RAM_type"] <- "Unified"
+laptop[176, "RAM_type"] <- "LPDDR5"
+laptop[296, "RAM_type"] <- "DDR4"
+laptop[403, "RAM_type"] <- "DDR4"
+laptop[552, "RAM_type"] <- "DDR4"
+laptop[c(649,652), "RAM_type"] <- "Unknown"
+laptop[657, "RAM_type"] <- "DDR4"
+laptop[664, "RAM_type"] <- "DDR4"
+laptop[728, "RAM_type"] <- "DDR4"
+laptop[774, "RAM_type"] <- "DDR4"
+laptop[903, "RAM_type"] <- "LPDDR5"
+```
+6. Storage_type  
+```{r}
+sort(table(laptop$Storage_type))
+```
+
+7. Graphics_name  
+```{r}
+length(unique(laptop$Graphics_name))
+```
+Since ```Graphics_name``` has 137 categories, we don't need to explore this feature. We will delete this column in the data preprocessing stage.
+
+8. Graphics_brand
+```{r}
+sort(table(laptop$Graphics_brand))
+```
+Because there are 2 missing values in ```Graphics_brand```, we modified them by hand.
+```{r}
+which(is.na(laptop$Graphics_brand))
+laptop[649, "Graphics_brand"] = "Unknown"
+laptop[999, "Graphics_brand"] = "NVIDIA"
+```
+9. Graphics_integreted
+```{r}
+sort(table(laptop$Graphics_integreted))
+```
+Because there are 2 missing values in ```Graphics_integreted```, but we don't know the true value, we modified them by the majority class "False", then convert "True" to 1, "False" to 0.  
+```{r}
+which(is.na(laptop$Graphics_integreted))
+laptop[c(649,999), "Graphics_integreted"] = "False"
+laptop$Graphics_integreted <- ifelse(laptop$Graphics_integreted == "True", 1, 0)
+```
+
+10. Touch_screen
+```{r Look at Touch_screen}
+sort(table(laptop$Graphics_integreted))
+```
+We convert "True" to 1, "False" to 0.
+```{r Convert Graphics_integrated to (0, 1)}
+laptop$Touch_screen <- ifelse(laptop$Touch_screen == "True", 1, 0)
+```
+11. Operating_system
+```{r}
+sort(table(laptop$Operating_system))
+```
+Inside the Operating_system, there are some subjects that are too detailed, so we modified them to general ones.  
+```{r}
+laptop[laptop == "Android 11 OS"] <- "Prime OS"
+laptop[laptop == "DOS 3.0 OS"] <- "DOS OS"
+laptop[laptop == "Mac 10.15.3\t OS"] <- "Mac OS"
+laptop[laptop == "Mac Catalina OS"] <- "Mac OS"
+```
+After we modify some typing errors, we delete ```Processor_variant```, ```Graphics_name``` for their high cardinalities, and delete ```Processor_brand``` since it's overlapped to another feature ```Processor_name```.
+```{r}
+laptop <- subset(laptop, select = -c(Processor_brand, Processor_variant, Graphics_name))
+```
+
+# Data Preprocessing
+## Imputation
+We use MICE imputation with method = 'pmm' to impute our missing data.    
+```{r, message=FALSE, warning=FALSE}
+temp_data <- mice(laptop, m=5, maxit=100, meth='pmm', seed=500, printFlag = FALSE)
+data <- complete(temp_data, 1)
+```
+
+## Drop rare subjects
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+value_counts <- data %>% group_by(Brand) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(Brand) %>% filter(n() >= 6) %>% ungroup()
+value_counts <- data %>% group_by(Processor_name) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(Processor_name) %>% filter(n() >= 2) %>% ungroup()
+value_counts <- data %>% group_by(Graphics_brand) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(Graphics_brand) %>% filter(n() >= 4) %>% ungroup()
+value_counts <- data %>% group_by(RAM_type) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(RAM_type) %>% filter(n() >= 2) %>% ungroup()
+value_counts <- data %>% group_by(Storage_type) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(Storage_type) %>% filter(n() >= 2) %>% ungroup()
+value_counts <- data %>% group_by(Operating_system) %>%  summarise(count = n())%>% arrange(count)
+data <- data %>% group_by(Operating_system) %>% filter(n() >= 4) %>% ungroup()
+```
+Finally, we look at the data we will analyze later.
+```{r}
+Summary.Table(data) %>% gt()
+```
+
+We split the dataset into training and testing data.
+```{r}
+sample_indices <- sample(seq_len(nrow(data)), size = 0.8 * nrow(data))
+trainData <- data[sample_indices, ]
+testData <- data[-sample_indices, ]
+cat("Training set dimensions:", dim(trainData), "\n")
+cat("Testing set dimensions:", dim(testData), "\n")
+```
+
+# Model Fitting
+```{r}
+MAE <- function(pred, true) return(mean(abs(pred-true)))
+RMSE <- function(pred, true) return(sqrt(mean((pred-true)^2)))
+```
+
+## Linear Regression
+```{r}
+fit <- lm(log(Price) ~ ., data = trainData)
+summary(fit)
+```
+
+```{r}
+lr_pred <- exp(predict(fit, newdata = testData))
+lr_mae <- MAE(lr_pred, testData$Price)
+lr_rmse <- RMSE(lr_pred, testData$Price)
+cat("LR MAE:", lr_mae, "RMSE", lr_rmse)
+```
+
+## Support Vector Regression
+```{r, message=FALSE, warning=FALSE}
+library(e1071)
+svr_model <- svm(log(Price) ~ ., data = trainData, kernel = "linear")
+svr_pred <- exp(predict(svr_model, newdata = testData))
+svr_mae <- MAE(svr_pred, testData$Price)
+svr_rmse <- RMSE(svr_pred, testData$Price)
+cat("SVR MAE:", svr_mae, "RMSE", svr_rmse)
+```
+
+## Random Forest Regressor
+```{r, message=FALSE, warning=FALSE}
+library(randomForest)
+rf_model <- randomForest(x = trainData[,-1], y = trainData$Price, importance = TRUE)
+rf_pred <- predict(rf_model, newdata = testData[,-1])
+rf_mae <- MAE(rf_pred, testData$Price)
+rf_rmse <- RMSE(rf_pred, testData$Price)
+cat("RF MAE:", rf_mae, "RMSE", rf_rmse)
+```
+
+## XGBoost
+XGBoost and LightGBM need to onehot encoding for categorical data !  
+```{r}
+data_numerical <- data %>% select(where(is.numeric))
+data_categorical <- data %>% select(where(is.character))
+onehot.matrix <- model.matrix(~ 0 + Brand + Processor_name + RAM_type + Graphics_brand
+                              + Operating_system, data = data_categorical)
+data_ML <- cbind(data_numerical, onehot.matrix)
+trainData <- data_ML[sample_indices, ]
+testData <- data_ML[-sample_indices, ]
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(xgboost)
+features_train <- trainData[, !colnames(trainData) %in% "Price"]
+features_test <- testData[, !colnames(testData) %in% "Price"]
+target_train <- trainData$Price
+target_test <- testData$Price
+
+dtrain <- xgb.DMatrix(data = as.matrix(features_train), label = log(target_train))
+dtest <- xgb.DMatrix(data = as.matrix(features_test), label = log(target_test))
+xgb_model <- xgboost(data = dtrain, nrounds = 100, objective = "reg:squarederror", verbose = 0)
+xgb_pred <- exp(predict(xgb_model, dtest))
+xgb_mae <- MAE(xgb_pred, testData$Price)
+xgb_rmse <- RMSE(xgb_pred, testData$Price)
+cat("XGB MAE:", xgb_mae, "RMSE", xgb_rmse)
+```
+
+## LightGBM
+```{r, message=FALSE, warning=FALSE}
+library(lightgbm)
+features_train <- trainData[, !colnames(trainData) %in% "Price"]
+features_test <- testData[, !colnames(testData) %in% "Price"]
+target_train <- trainData$Price
+target_test <- testData$Price
+
+dtrain <- lgb.Dataset(data = as.matrix(features_train), label = log(target_train))
+dtest <- lgb.Dataset(data = as.matrix(features_test), label = log(target_test))
+params <- list(objective = "regression", metric = "rmse")
+lightgbm_model <- lgb.train(params = params, data = dtrain,
+                            nrounds = 100, verbose = -1)
+lgbm_pred <- exp(predict(lightgbm_model, newdata = as.matrix(features_test)))
+lgbm_mae <- MAE(lgbm_pred, testData$Price)
+lgbm_rmse <- RMSE(lgbm_pred, testData$Price)
+cat("LightGBM MAE:", lgbm_mae, "RMSE", lgbm_rmse)
+```
+
+# Conclusion
+Let's see which model predicts the best.  
+```{r}
+rmse <- c(lr_rmse, svr_rmse, rf_rmse, xgb_rmse, lgbm_rmse)
+mae <- c(lr_mae, svr_mae, rf_mae, xgb_mae, lgbm_mae)
+performance <- round(rbind(rmse, mae),2)
+colnames(performance) <- c("LR", "SVR", "RF", "XGB", "LightGBM")
+data.frame(performance) %>% gt(rownames_to_stub = TRUE)
+```
+From the table above, Random Forest is the best model.
+
+Next, we look at Feature importance of Random Forest, XGBoost and LightGBM.  
+```{r}
+# Random Forest
+importance_scores <- importance(rf_model)
+importance_df <- data.frame(Importance = importance_scores[, "%IncMSE"],
+                            Feature = rownames(importance_scores))
+importance_df <- importance_df[order(-importance_df$Importance), ]
+top_10_features.rf <- importance_df[2:11,]$Feature
+
+# XGBoost
+importance_matrix <- xgb.importance(feature_names = colnames(features_train), model = xgb_model)
+
+# Sorting the importance matrix by gain in descending order
+top_features <- importance_matrix[order(-importance_matrix$Gain),]
+# Selecting the top 10 features
+top_10_features.xgb <- head(top_features, 10)$Feature
+
+# LightGBM
+feature_importance <- lgb.importance(model = lightgbm_model)
+sorted_feature_importance <- feature_importance[order(-feature_importance$Gain), ]
+top_10_features.lgb <- head(sorted_feature_importance, 10)$Feature
+
+importance_comparison <- cbind(top_10_features.rf, top_10_features.xgb, 
+                               top_10_features.lgb)
+colnames(importance_comparison) <- c("RF", "XGB", "LightGBM")
+rownames(importance_comparison) <- c(1:10)
+data.frame(importance_comparison) %>% gt(rownames_to_stub = TRUE)
+```
+From table table above, we can conclude that the top 4 features to predict the price of a laptop are:  
+1. Graphics_GB  
+2. ppi  
+3. Threads  
+4. RAM_GB

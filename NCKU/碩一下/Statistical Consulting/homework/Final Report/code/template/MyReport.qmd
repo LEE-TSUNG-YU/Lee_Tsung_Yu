@@ -1,0 +1,46 @@
+---
+title: "Laptop Prices Prediction"
+subtitle: "Group 2"
+date: today
+author: "Lee Tsung Yu"
+format:
+  html: 
+   embed-resources: true
+#  pdf:
+#    include-in-header:
+#      - text: |
+#         \usepackage{setspace,relsize}
+#mainfont: "Microsoft JhengHei UI"
+toc: true
+bibliography: references.bib
+---
+
+# Introduction  
+
+
+
+## DataSource 
+
+```{r}
+#| output: asis
+library(Hmisc)
+dt <- read.csv("data/customers100.csv")
+latex(describe(dt), file="", caption.placement = "top")
+```
+
+## Summary Statistics
+
+## Data Visualisation
+
+```{r}
+plot(mtcars)
+```
+
+## Missing Values  
+
+# Data Analysis
+
+# Final Results
+
+This is my reference [@cabrera2013]
+
