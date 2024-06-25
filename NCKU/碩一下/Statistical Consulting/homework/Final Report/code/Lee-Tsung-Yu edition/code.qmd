@@ -394,6 +394,7 @@ Finally, we look at the data we will analyze later.
 Summary.Table(data) %>% gt()
 ```
 
+## Split into training and testing dataset
 We split the dataset into training and testing data.
 ```{r}
 sample_indices <- sample(seq_len(nrow(data)), size = 0.8 * nrow(data))
@@ -435,8 +436,8 @@ cat("SVR MAE:", svr_mae, "RMSE", svr_rmse)
 ## Random Forest Regressor
 ```{r, message=FALSE, warning=FALSE}
 library(randomForest)
-rf_model <- randomForest(x = trainData[,-1], y = trainData$Price, importance = TRUE)
-rf_pred <- predict(rf_model, newdata = testData[,-1])
+rf_model <- randomForest(x = trainData[,-2], y = trainData$Price, importance = TRUE)
+rf_pred <- predict(rf_model, newdata = testData[,-2])
 rf_mae <- MAE(rf_pred, testData$Price)
 rf_rmse <- RMSE(rf_pred, testData$Price)
 cat("RF MAE:", rf_mae, "RMSE", rf_rmse)
@@ -489,16 +490,35 @@ lgbm_rmse <- RMSE(lgbm_pred, testData$Price)
 cat("LightGBM MAE:", lgbm_mae, "RMSE", lgbm_rmse)
 ```
 
+## Catboost
+```{r, message=FALSE, warning=FALSE}
+library(catboost)
+features_train <- trainData[, !colnames(trainData) %in% "Price"]
+features_test <- testData[, !colnames(testData) %in% "Price"]
+target_train <- trainData$Price
+target_test <- testData$Price
+
+train_pool <- catboost.load_pool(data = features_train, label = target_train)
+fit_params <- list(loss_function = 'RMSE', iterations = 100, logging_level = "Silent")
+model_cat <- catboost.train(train_pool, params = fit_params)
+
+test_pool <- catboost.load_pool(data = features_test, label = target_test)
+cat_pred <- catboost.predict(model_cat, test_pool)
+cat_mae <- MAE(cat_pred, testData$Price)
+cat_rmse <- RMSE(cat_pred, testData$Price)
+cat("Catboost MAE:", cat_mae, "RMSE", cat_rmse)
+```
+
+
 # Conclusion
 Let's see which model predicts the best.  
 ```{r}
-rmse <- c(lr_rmse, svr_rmse, rf_rmse, xgb_rmse, lgbm_rmse)
-mae <- c(lr_mae, svr_mae, rf_mae, xgb_mae, lgbm_mae)
+rmse <- c(lr_rmse, svr_rmse, rf_rmse, xgb_rmse, lgbm_rmse, cat_rmse)
+mae <- c(lr_mae, svr_mae, rf_mae, xgb_mae, lgbm_mae, cat_mae)
 performance <- round(rbind(rmse, mae),2)
-colnames(performance) <- c("LR", "SVR", "RF", "XGB", "LightGBM")
+colnames(performance) <- c("LR", "SVR", "RF", "XGB", "LightGBM", "Catboost")
 data.frame(performance) %>% gt(rownames_to_stub = TRUE)
 ```
-From the table above, Random Forest is the best model.
 
 Next, we look at Feature importance of Random Forest, XGBoost and LightGBM.  
 ```{r}
@@ -507,7 +527,7 @@ importance_scores <- importance(rf_model)
 importance_df <- data.frame(Importance = importance_scores[, "%IncMSE"],
                             Feature = rownames(importance_scores))
 importance_df <- importance_df[order(-importance_df$Importance), ]
-top_10_features.rf <- importance_df[2:11,]$Feature
+top_10_features.rf <- importance_df[1:10,]$Feature
 
 # XGBoost
 importance_matrix <- xgb.importance(feature_names = colnames(features_train), model = xgb_model)
@@ -522,14 +542,18 @@ feature_importance <- lgb.importance(model = lightgbm_model)
 sorted_feature_importance <- feature_importance[order(-feature_importance$Gain), ]
 top_10_features.lgb <- head(sorted_feature_importance, 10)$Feature
 
+# Catboost
+feature_importance_cat <- catboost.get_feature_importance(model_cat, train_pool)
+sorted_feature_importance_cat <- rownames(feature_importance_cat)[order(-feature_importance_cat)]
+top_10_features.cat <- head(sorted_feature_importance_cat, 10)
+
 importance_comparison <- cbind(top_10_features.rf, top_10_features.xgb, 
-                               top_10_features.lgb)
-colnames(importance_comparison) <- c("RF", "XGB", "LightGBM")
+                               top_10_features.lgb, top_10_features.cat)
+colnames(importance_comparison) <- c("RF", "XGB", "LightGBM", "Catboost")
 rownames(importance_comparison) <- c(1:10)
 data.frame(importance_comparison) %>% gt(rownames_to_stub = TRUE)
 ```
-From table table above, we can conclude that the top 4 features to predict the price of a laptop are:  
+From table table above, we can conclude that the top 3 features to predict the price of a laptop are:  
 1. Graphics_GB  
 2. ppi  
-3. Threads  
-4. RAM_GB
+3. RAM_GB
