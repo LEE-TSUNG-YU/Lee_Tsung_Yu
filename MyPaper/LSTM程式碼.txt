@@ -1,0 +1,145 @@
+# LSTM
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, TensorDataset
+
+# 輸入資料
+train = pd.read_csv(r"/kaggle/input/digit-recognizer/train.csv",dtype = np.float32)
+
+# 分成 Features (pixels) 和 Labels (0-9).
+targets_numpy = train.label.values
+features_numpy = train.loc[:,train.columns != "label"].values/255 # normalization
+
+# 切分成 8:2
+features_train, features_test, targets_train, targets_test = train_test_split(features_numpy, targets_numpy, test_size = 0.2, random_state = 42)
+
+# 將訓練資料轉換成 tensor.
+featuresTrain = torch.from_numpy(features_train)
+targetsTrain = torch.from_numpy(targets_train).type(torch.LongTensor) # data type is long
+
+# 將測試資料轉換成 tensor.
+featuresTest = torch.from_numpy(features_test)
+targetsTest = torch.from_numpy(targets_test).type(torch.LongTensor) # data type is long
+
+# 設定 batch_size, epoch and iteration
+batch_size = 100
+n_iters = 6000
+num_epochs = n_iters / (len(features_train) / batch_size)
+num_epochs = int(num_epochs)
+print("Epoch Number: ",num_epochs)
+
+# 將訓練、測試資料 轉換成 tensor 類型的資料集，用於Pytorch
+train = TensorDataset(featuresTrain,targetsTrain)
+test = TensorDataset(featuresTest,targetsTest)
+
+# 設定 data loader
+train_loader = DataLoader(train, batch_size = batch_size, shuffle = False)
+test_loader = DataLoader(test, batch_size = batch_size, shuffle = False)
+
+class LSTMModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim):
+        super(LSTMModel, self).__init__()
+        self.hidden_dim = hidden_dim # 隱藏層維度
+        self.layer_dim = layer_dim # 隱藏層數量
+
+        # 初始化 LSTM
+        self.lstm = nn.LSTM(input_dim, hidden_dim, layer_dim, batch_first=True) # batch_first=True (batch_dim, seq_dim, feature_dim)
+
+        # Readout layer
+        self.fc = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Initialize hidden state with zeros
+        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+
+        # Initialize cell state
+        c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+
+        # 28 time steps
+        # We need to detach as we are doing truncated backpropagation through time (BPTT)
+        # If we don't, we'll backprop all the way to the start even after going through another batch
+        out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
+
+        # Index hidden state of last time step
+        # out.size() --> 100, 28, 100
+
+        # out[:, -1, :] --> 100, 100 --> just want last time step hidden states! 
+        out = self.fc(out[:, -1, :])
+ 
+        # out.size() --> 100, 10
+        return out
+    
+input_dim = 28
+hidden_dim = 100
+layer_dim = 1
+output_dim = 10
+model = LSTMModel(input_dim, hidden_dim, layer_dim, output_dim)
+
+error = nn.CrossEntropyLoss()
+
+learning_rate = 0.1
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+
+# Number of steps to unroll
+seq_dim = 28  
+loss_list = []
+iteration_list = []
+accuracy_list = []
+count = 0
+for epoch in range(num_epochs):
+    for i, (images, labels) in enumerate(train_loader):
+        # Load images as a torch tensor with gradient accumulation abilities
+        images = images.view(-1, seq_dim, input_dim).requires_grad_()
+
+        # Clear gradients w.r.t. parameters
+        optimizer.zero_grad()
+
+        # Forward pass to get output/logits
+        # outputs.size 100, 10
+        outputs = model(images)
+
+        # Calculate Loss: softmax --> cross entropy loss
+        loss = error(outputs, labels)
+
+        # Getting gradients
+        loss.backward()
+
+        # Updating parameters
+        optimizer.step()
+
+        count += 1
+
+        if count % 500 == 0:
+            # Calculate Accuracy         
+            correct = 0
+            total = 0
+            for images, labels in test_loader:
+                
+                images = images.view(-1, seq_dim, input_dim)
+
+                # Forward pass only to get logits/output
+                outputs = model(images)
+
+                # Get predictions from the maximum value
+                _, predicted = torch.max(outputs.data, 1)
+
+                # Total number of labels
+                total += labels.size(0)
+
+                # Total correct predictions
+                correct += (predicted == labels).sum()
+
+            accuracy = 100 * correct / total
+            
+            loss_list.append(loss.data.item())
+            iteration_list.append(count)
+            accuracy_list.append(accuracy)
+            
+            # Print Loss
+            print('Iteration: {}. Loss: {}. Accuracy: {}'.format(count, loss.data.item(), accuracy))
