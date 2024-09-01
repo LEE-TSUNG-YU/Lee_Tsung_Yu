@@ -1,0 +1,4 @@
+"","voyage_1","voyage_2","voyage_3","variable","pca","arma"
+"voyage_1",NA,"3.82/3.85(1.82%)","2.82/2.82(7.22%)","Time,V","Torque,EngineSpeed,Power,WaterSpeed","4,0,0,0,1,1,0"
+"voyage_2","2.74/3(8.68%)",NA,"2.61/2.82(8.96%)","V","Torque,EngineSpeed,Power,WaterSpeed","3,0,0,0,1,1,0"
+"voyage_3",NA,NA,NA,NA,NA,NA
