@@ -2,7 +2,7 @@ library(ggplot2)
 diamonds
 ggplot(diamonds, aes(clarity, group = cut)) +
   geom_line(aes(color = cut), position="identity", stat = "count")
-df <- read.csv("C:/Users/peterchen/Desktop/成大統計/工作助理/20200114/CFD8600.csv")
+df <- read.csv("C:/github_LTY/Lee_Tsung_Yu/MyPaper/vessel data/CFD8600/CFD8600.csv")
 df["DraftTrim"] <- paste0(df[,"Draft"], ", ", df[,"Trim"])
 df["DraftV"] <- paste0(df[,"Draft"], ", ", df[,"V"])
 df["TrimV"] <- paste0(df[,"Trim"], ", ", df[,"V"])

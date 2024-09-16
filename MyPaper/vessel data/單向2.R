@@ -1,29 +1,29 @@
 location <- getwd()
-setwd(location)
+setwd("C:/github_LTY/Lee_Tsung_Yu/MyPaper/vessel data")
 
 source('function.R', encoding="utf-8")
 
 # 對每一艘船的亞洲到美洲(_toE)與美洲到亞洲(_toW)配適模型
 for (m in 1:6){
   for (n in c("_toE.csv", "_toW.csv")){
-    
-#pre-setting
-file_list <- c("9337482.csv", "9462691.csv", "9462706.csv", "9462718.csv", "9462720.csv", "9462732.csv")
-boat_list <- c("9337482", "9462691", "9462706", "9462718", "9462720", "9462732")
+  # pre-setting
+  file_list <- c("9337482.csv", "9462691.csv", "9462706.csv", "9462718.csv", "9462720.csv", "9462732.csv")
+  boat_list <- c("9337482", "9462691", "9462706", "9462718", "9462720", "9462732")
 
-# 是("9337482", "9462691", "9462706", "9462718", "9462720", "9462732") 裡的第幾艘船?
-boat_index <- m
+  # 是("9337482", "9462691", "9462706", "9462718", "9462720", "9462732") 
+  # 裡的第幾艘船?
+  boat_index <- m
 
-Ship <- read.csv(paste0("IMS/",boat_list[boat_index],'.csv'))
-# Ship <- Ship[,c(1:8,15:27)]
+  Ship <- read.csv(paste0("IMS/",boat_list[boat_index],'.csv'))
+  # Ship <- Ship[,c(1:8,15:27)]
 
-Ship[,"MassFlowRate_D"] <- Ship[,"M_EInletMassFlowRate"] - Ship[,"M_EOutletMassFlowRate"]
-Ship[,"ShipSpeed_D"] <- Ship[,"GroundSpeed"] - Ship[,"WaterSpeed"]
-# 整數換成小數
-Ship[,"Power"] <- as.numeric(unlist(Ship[,"Power"]))
+  Ship[,"MassFlowRate_D"] <- Ship[,"M_EInletMassFlowRate"] - Ship[,"M_EOutletMassFlowRate"]
+  Ship[,"ShipSpeed_D"] <- Ship[,"GroundSpeed"] - Ship[,"WaterSpeed"]
+  # 整數換成小數
+  Ship[,"Power"] <- as.numeric(unlist(Ship[,"Power"]))
 
-CFD <- read.csv("CFD8600/CFD8600.csv")
-for (a in unique(Ship$Trim)) {
+  CFD <- read.csv("CFD8600/CFD8600.csv")
+  for (a in unique(Ship$Trim)) {
   for (b in unique(Ship$Draft)) {
     if (length(which(Ship$Trim==a & Ship$Draft==b))==0) {
       next
@@ -35,12 +35,12 @@ for (a in unique(Ship$Trim)) {
   }
 }
 
-route <- read.csv(paste0("voyage3/", boat_list[boat_index], n))
-result <- matrix(NA, ncol = (dim(route)[1] + 3), nrow = dim(route)[1]) %>% as.data.frame
-colnames(result) <- c(paste('voyage', 1:dim(route)[1], sep = '_'), "variable", "pca", "arma")
-rownames(result) <- paste('voyage', 1:dim(route)[1], sep = '_')
+  route <- read.csv(paste0("voyage3/", boat_list[boat_index], n))
+  result <- matrix(NA, ncol = (dim(route)[1] + 3), nrow = dim(route)[1]) %>% as.data.frame
+  colnames(result) <- c(paste('voyage', 1:dim(route)[1], sep = '_'), "variable", "pca", "arma")
+  rownames(result) <- paste('voyage', 1:dim(route)[1], sep = '_')
 
-for (i in 1:(dim(route)[1]-1)){
+  for (i in 1:(dim(route)[1]-1)){
   print(i)
   voyage1 <- (route[i,1] %>% as.numeric()):(route[i,2] %>% as.numeric())
   {
@@ -200,7 +200,7 @@ for (i in 1:(dim(route)[1]-1)){
   }
 }
 result
-write.csv(result, paste0("R_output2/", boat_list[m], n))
+write.csv(result, paste0("R_output_LTY/", boat_list[m], n))
 
   }
 }

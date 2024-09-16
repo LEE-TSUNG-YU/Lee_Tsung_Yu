@@ -7,7 +7,12 @@ library(tidyverse)
 # library(data.table)
 
 # function
-cor.levelplot_fun <- function(data,boat_name="", start_location_name="", end_location_name="", cex=0.5){
+cor.levelplot_fun <- function(data, 
+                              boat_name = "", 
+                              start_location_name = "", 
+                              end_location_name = "", 
+                              cex=0.5){
+  # Delete Latitude, Longtitude, Draft, Trim columns
   if (sum(colnames(data)=="Latitude")==1){
     data=data[,-which(colnames(data)=="Latitude")]
   }
@@ -23,11 +28,15 @@ cor.levelplot_fun <- function(data,boat_name="", start_location_name="", end_loc
   data <- na.omit(data)
   n <- dim(data)[1]
   p <- dim(data)[2]
+  
+  # Draw the correlation plot
   plot1 <- levelplot(cor(data, method = "pearson"),
-                     col.regions=heat.colors(100),
-                     main=paste0("correlation of ",boat_name,"","從",start_location_name,"到",end_location_name),xlab="",ylab="",
-                     scales=list(x=list(at=seq(1,p),labels=colnames(data),rot=45,cex=1),y=list(cex=1)),
-                     panel=function(...) {
+                     col.regions = heat.colors(100),
+                     main = paste0("correlation of ", boat_name, "", "從", 
+                                   start_location_name,"到",end_location_name), 
+                     xlab = "", ylab = "",
+                     scales = list(x=list(at=seq(1,p),labels=colnames(data),rot=45,cex=1),y=list(cex=1)),
+                     panel = function(...) {
                        arg <- list(...)
                        panel.levelplot(...)
                        panel.text(rep(seq(1,p),p),rep(seq(1,p),each=p),round(cor(data,method="pearson"),2),cex=cex)
@@ -35,7 +44,9 @@ cor.levelplot_fun <- function(data,boat_name="", start_location_name="", end_loc
   return(list(cor.data = cor(data,method="pearson"),plot = plot1))
 }
 
-cor.test.levelplot_fun <- function(data, boat_name="", start_location_name="", end_location_name="", cex=0.5){
+cor.test.levelplot_fun <- function(data, 
+                                   boat_name = "", start_location_name = "", 
+                                   end_location_name = "", cex = 0.5){
   if (sum(colnames(data)=="Latitude")==1){
     data=data[,-which(colnames(data)=="Latitude")]
   }
@@ -57,7 +68,7 @@ cor.test.levelplot_fun <- function(data, boat_name="", start_location_name="", e
       cor.test.pvalue[i,j] <- cor.test(x = data[,i], y = data[,j], alternative = "two.sided", method = "pearson", exact = TRUE)$p.value
     }
   }
-  #cor.test.pvalue=matrix(p.adjust(p = as.numeric(cor.test.pvalue),method = "bonferroni"),ncol=p,nrow=p)
+  #cor.test.pvalue = matrix(p.adjust(p = as.numeric(cor.test.pvalue),method = "bonferroni"),ncol=p,nrow=p)
   dimnames(cor.test.pvalue) <- list(colnames(data), colnames(data))
   plot1 <- levelplot(cor.test.pvalue,
                      col.regions=heat.colors(100),
