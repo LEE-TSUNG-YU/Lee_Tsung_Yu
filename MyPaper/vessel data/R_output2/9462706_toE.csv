@@ -1,6 +1,0 @@
-"","voyage_1","voyage_2","voyage_3","voyage_4","voyage_5","variable","pca","arma"
-"voyage_1",NA,"4.16/4.78(13.29%)","4.43/4.93(10.16%)","3.31/3.65(8.55%)","2.72/2.92(6.22%)","V","Torque,EngineSpeed,Power,WaterSpeed","0,0,0,0,1,1,0"
-"voyage_2","3.12/4.97(36.49%)",NA,"3.35/4.93(31.98%)","2.47/3.65(31.13%)","2.01/2.92(30.44%)","V","Torque,EngineSpeed,Power,WaterSpeed","0,0,0,0,1,1,0"
-"voyage_3","3.81/4.97(23.6%)","3.99/4.78(17.97%)",NA,"3.38/3.65(10.55%)","2.89/2.92(10.53%)","Time,V","Torque,EngineSpeed,Power,WaterSpeed","2,1,0,0,1,1,0"
-"voyage_4","4.23/4.97(16.73%)","4.25/4.78(12.27%)","4.5/4.93(8.89%)",NA,"2.91/2.92(5.38%)","V","Torque,EngineSpeed,Power,WaterSpeed","0,0,0,0,1,1,0"
-"voyage_5",NA,NA,NA,NA,NA,NA,NA,NA
