@@ -1,4 +1,4 @@
-const API_KEY = "YOUR_FINNHUB_API_KEY";
+const API_KEY = "d87vqspr01qmhakhj7j0d87vqspr01qmhakhj7jg";
 
 async function getStock() {
   const symbol = document.getElementById("symbol").value;
