@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票分析平台</title>
+
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>股票分析平台</h1>
+        <p>GitHub Pages 靜態股票網站範本</p>
+    </header>
+
+    <section class="search-box">
+
+        <input
+            type="text"
+            id="stockInput"
+            placeholder="輸入股票代碼，例如 AAPL 或 TSLA"
+        >
+
+        <button onclick="loadStock()">
+            查詢股票
+        </button>
+
+    </section>
+
+    <section class="info-card">
+        <div id="status">
+            請輸入股票代碼
+        </div>
+    </section>
+
+    <section class="chart-card">
+        <div id="chart"></div>
+    </section>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
