@@ -1,119 +1,40 @@
+const API_KEY = "YOUR_FINNHUB_API_KEY";
 
-async function loadStock(){
+async function getStock() {
+  const symbol = document.getElementById("symbol").value;
 
-    const symbol =
-        document.getElementById("stockInput")
-        .value
-        .toUpperCase()
-        .trim();
+  if (!symbol) return;
 
-    if(!symbol){
+  const quoteRes = await fetch(
+    `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`
+  );
+  const quote = await quoteRes.json();
 
-        alert("請輸入股票代碼");
+  document.getElementById("price").innerHTML = `
+    <h2>${symbol.toUpperCase()}</h2>
+    <p>Current Price: $${quote.c}</p>
+    <p>High: ${quote.h} | Low: ${quote.l}</p>
+  `;
 
-        return;
-    }
+  const to = Math.floor(Date.now() / 1000);
+  const from = to - 60 * 60 * 24 * 365;
 
-    document.getElementById("status")
-        .innerHTML =
-        "讀取資料中...";
+  const candleRes = await fetch(
+    `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${from}&to=${to}&token=${API_KEY}`
+  );
 
-    try{
+  const candle = await candleRes.json();
 
-        // 使用 Stooq 免費資料源
-        // 不需要 API Key
+  const trace = {
+    x: candle.t.map(t => new Date(t * 1000)),
+    open: candle.o,
+    high: candle.h,
+    low: candle.l,
+    close: candle.c,
+    type: "candlestick"
+  };
 
-        const url =
-            `https://stooq.com/q/d/l/?s=${symbol.toLowerCase()}&i=d`;
-
-        const response =
-            await fetch(url);
-
-        const csv =
-            await response.text();
-
-        if(csv.includes("No data")){
-
-            throw new Error("找不到股票資料");
-        }
-
-        const rows =
-            csv.trim().split("\n");
-
-        rows.shift();
-
-        const dates = [];
-        const closes = [];
-
-        rows.forEach(row => {
-
-            const cols = row.split(",");
-
-            if(cols.length >= 5){
-
-                dates.push(cols[0]);
-                closes.push(Number(cols[4]));
-            }
-
-        });
-
-        if(closes.length === 0){
-
-            throw new Error("沒有可用資料");
-        }
-
-        const latest =
-            closes[closes.length - 1];
-
-        const change =
-            latest - closes[closes.length - 2];
-
-        document.getElementById("status")
-            .innerHTML = `
-            <h2>${symbol}</h2>
-            <p>最新收盤價：${latest.toFixed(2)}</p>
-            <p>漲跌：${change.toFixed(2)}</p>
-        `;
-
-        const data = [{
-
-            x:dates,
-            y:closes,
-            type:"scatter",
-            mode:"lines",
-            name:symbol
-
-        }];
-
-        const layout = {
-
-            title:`${symbol} 股價走勢圖`,
-            xaxis:{
-                title:"日期"
-            },
-            yaxis:{
-                title:"價格"
-            }
-
-        };
-
-        Plotly.newPlot(
-            "chart",
-            data,
-            layout,
-            {
-                responsive:true
-            }
-        );
-
-    }
-    catch(error){
-
-        document.getElementById("status")
-            .innerHTML =
-            "載入失敗，請確認股票代碼。";
-
-        console.error(error);
-    }
-
+  Plotly.newPlot("chart", [trace], {
+    title: `${symbol.toUpperCase()} Price Chart`
+  });
 }
